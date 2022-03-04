@@ -21,7 +21,7 @@ proposeRelease(2500)
 * There is no active proposal `bool private proposalActive`
 * Basis points must be between 0 and 10,000
 * There is a limit of 100 proposals
-* The final 100th proposal must request the full contract balance (5,000)
+* The final 100th proposal must request the full contract balance (10,000 basis points)
 * There must be a positive balance on the contract 
 * The owner cannot make a release proposal if one was started in the last 7 days (604,800 seconds)
 * Once the proposal is started, `require` statements in the mint functions and `beforeTokenTransfers` will prevent the transfer or minting of tokens

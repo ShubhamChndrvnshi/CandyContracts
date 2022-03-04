@@ -48,7 +48,7 @@ If you would rather neither action occur then simply abstain from voting.
 * The user has not already cast a vote for the current proposal number. The `uint8 private currentProposal` state variable tracks the current proposal for the contract. This value is checked against the 8-bit integer interpretation of the first byte of the `uint64 aux` variable in ERC721A. If they match, it means the user has already voted on that proposal. 
 * The first 8 bits of the aforementioned variable are updated in the ERC721A AddressData before incrementing the variables which track true/false vote counts. 
 
-### Passing Proposals 
+### Passing Proposals (Internal Logic)
 The `vote(bool approve)` function previously discussed is responsible for moving a proposal from active and pending to successfully passed. 
 ```javascript
 if (proposalYesCount + proposalNoCount > ( (totalSupply() / 2) + (totalSupply() / 10) )) {

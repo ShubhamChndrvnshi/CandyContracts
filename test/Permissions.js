@@ -59,7 +59,7 @@ describe("Owner Permissions", function () {
 
   });
 
-  it("onlyOwner can release funds", async function() {
+  it("onlyOwner can call release function", async function() {
     const deployment = await deploySingle()
     CandyCreator = deployment.contract 
 
@@ -79,8 +79,7 @@ describe("Owner Permissions", function () {
 
     await expect(CandyCreator.connect(deployment.candyWallet).release())
     .to.be.revertedWith("Owner: caller is not the Owner");
-
-    await CandyCreator.connect(deployment.owner).release()
+    
 
   });
 

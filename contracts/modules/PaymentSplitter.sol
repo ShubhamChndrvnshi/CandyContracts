@@ -26,6 +26,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "../utils/Context.sol";
+//import "hardhat/console.sol";
 
 /**
  * @title PaymentSplitter
@@ -116,18 +117,61 @@ abstract contract PaymentSplitter is Context {
   /**
    * @dev Releases contract balance to the addresses that are owed funds.
    */
-  function _release() internal {
-     require(address(this).balance > 0, "Contract must have a balance to release funds");
-     for (uint i = 0; i < _numPayees.current(); i++) {
+  function _release(uint256 proposalBasisPoints) internal {
+     // Pay out the addresses owed funds 
+     for (uint i = 1; i < _numPayees.current(); i++) {
+
+        // Calculate payment owed 
+
+        // Log address
         address account = payee(i);
+        //console.log(account);
+
         uint256 totalReceived = address(this).balance + _totalReleased;
+        //console.log("Total Received");
+        //console.log(totalReceived);
+
+        // Full amount of payment they are owed 
         uint256 payment = (totalReceived * _shares[account]) / _totalShares - _released[account];
+        //console.log("Full payment owed");
+        //console.log(payment);
+
+        // Adjusted amount of payment they are owed 
+        payment = (payment * proposalBasisPoints) / _totalShares;
+        //console.log("Adjusted payment");
+        //console.log(payment);
+
         _released[account] = _released[account] + payment;
         _totalReleased = _totalReleased + payment;
         Address.sendValue(payable(account), payment);
+        // Emit event 
         emit PaymentReleased(account, payment);
       }
     
+  }
+
+  function _platformRelease() internal {
+    // Candy Wallet is always the first payee 
+    // Make sure the Candy Platform can't repeatedly request 5% again and again from the contract 
+    // this check might not be necessary
+    address account = payee(0);
+    uint256 totalReceived = address(this).balance + _totalReleased;
+    uint256 payment = (totalReceived * _shares[account]) / _totalShares - _released[account];
+    _released[account] = _released[account] + payment;
+    _totalReleased = _totalReleased + payment;
+    //platformFeeReleased = true;
+    Address.sendValue(payable(account), payment);
+    // Emit event 
+    emit PaymentReleased(account, payment);
+  }
+
+  function _refundRelease(address account, uint256 refundAmount) internal {
+    // Candy Wallet is always the first payee 
+    // Make sure the Candy Platform can't repeatedly request 5% again and again from the contract 
+    // this check might not be necessary
+    Address.sendValue(payable(account), refundAmount);
+    // Emit event 
+    emit PaymentReleased(account, refundAmount);
   }
 
   /**
@@ -139,6 +183,7 @@ abstract contract PaymentSplitter is Context {
     require(account != address(0), "Can't add shares to the zero address");
     require(shares_ > 0, "Shares must be greater than zero");
     require(_shares[account] == 0, "Address has already been assigned shares");
+    // Num payees needed to enumerate later ? or can get rid of it
     _numPayees.increment();
     _payees.push(account);
     _shares[account] = shares_;

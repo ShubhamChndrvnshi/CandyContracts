@@ -322,7 +322,7 @@ describe("Whitelist Minting", function () {
     const fee = await CandyCreator.connect(deployment.owner)
     .mintingFee()
     
-    for (var i = 0; i < 1000; i++) {
+    for (var i = 0; i < 100; i++) {
       // We only whitelisted the owner, the other generated proof is invalid
       await CandyCreator.connect(deployment.candyWallet)
       .whitelistMint(candyProof, 1, {

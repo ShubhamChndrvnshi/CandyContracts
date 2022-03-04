@@ -98,7 +98,7 @@ Anyone is welcome to fork this code and create their own version without this fu
 We haven't yet tested the gas fee for voting. This code is in alpha release status and shouldn't be considered production-ready without further community input and support. Please open an issue if you find security vulnerabilities in this contract.
 
 ### Roadmap 
-* Integrate with Snapshot/SnapshotX and enable gasless voting (perhaps with Layer 2 Rollup)
+* Integrate with [Snapshot](https://docs.snapshot.org/) and enable gasless voting (perhaps with Layer 2 Rollup)
 
 ## Base Features 
 * Minimal Setup

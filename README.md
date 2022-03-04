@@ -5,7 +5,7 @@
 ![GithubFollow](https://img.shields.io/github/followers/Candy-Labs?style=social)
 
 # CandyCreatorV1A Governance
-Variant of the CandyCreatorV1A base contract that restricts the owner from releasing funds without first passing a community vote by the token holders.
+Variant of the CandyCreatorV1A base contract that restricts the owner from releasing funds without first passing a community vote by the token holders. Thank you to the authors and maintainers of the [ERC721A](https://github.com/chiru-labs/ERC721A) repository for making this possible.
 
 ## Voting 
 ### Proposing a release (Project Creator)

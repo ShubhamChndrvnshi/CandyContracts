@@ -37,10 +37,10 @@ The disadvantage to this variant is that contract owners could 'sneakily' propos
 The advantage to this variant is that the contract owner doesn't need to ask users to spend gas to approve the withdrawal. It is also very difficult to reach quorums in certain communities. Instead, token holders spend gas to secure an outcome that would directly economically benefit them (preventing the withdrawal by the owners and a 'rug pull' or refunding themselves. 
 
 ## Abstain from voting
-If the token holder abstains from voting, they are voting for nothing to occur. If they abstain, and enough token holders do also, nothing will occur on the contract. 
+If the token holder abstains from voting, they will allow the release to move forward after the voting period has concluded.
 
-## Approve the withdrawal proposal
-Call `vote(true)` to cast your votes to approve the proposal. 
+## Veto/reject the withdrawal proposal
+Call `vote(true)` to cast your votes to veto the withdrawal.
 
 ## Request a refund
 Call `vote(false)` to cast your votes to approve a refund. 

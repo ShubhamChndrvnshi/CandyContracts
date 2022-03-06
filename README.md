@@ -7,6 +7,21 @@
 # CandyCreatorV1A Governance
 Variant of the CandyCreatorV1A base contract that restricts the owner from releasing funds without first passing a community vote by the token holders. Thank you to the authors and maintainers of the [ERC721A](https://github.com/chiru-labs/ERC721A) repository for making this possible.
 
+There are two variants of this token:
+CandyCreatorVoterVeto
+CandyCreatorVoterApprove
+
+# CandyCreatorVoterApprove
+This governance variant of the CandyCreatorV1A base contract requires the contract owner to propose a release of some percentage of the contract balance (measured in basis points). If this proposal is not explicitly approved by the token holders, it does not pass and nothing happens. At each proposal stage, voters can choose 3 options. 
+
+There is added security in this variant in that contract owners can't 'sneakily' pass a proposal (in CandyCreatorVoterVeto, proposals pass by default). However, this added benefit is matched by the fact that project creators / contract owners will have to convince their community members to vote and pay a gas fee for the on-chain voting just to release funds to the owner (it is hard to convince people to spend money for a transaction fee that just enriches another party). 
+
+## Abstain from voting
+If the token holder abstains from voting, they are voting for nothing to occur. If they abstain, and enough token holders do also, nothing will occur on the contract. 
+
+## Approve the withdrawal proposal
+Call `vote(true)` to cast your votes to approve the proposal. 
+
 ## Voting 
 ### Proposing a release (Project Creator)
 In order for the contract owner to release funds from the contract into their own account, they must first propose a release measured in basis points measured out of 10,000. 

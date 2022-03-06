@@ -5,7 +5,7 @@ const keccak256 = require('keccak256');
 
 async function deploySingle() {
   const [owner, candyWallet, royalty1, royalty2] = await ethers.getSigners();
-  const CandyCreatorFactory = await ethers.getContractFactory("CandyCreatorV1A");
+  const CandyCreatorFactory = await ethers.getContractFactory("CandyCreatorVoterApprove");
   const CandyCreator = await CandyCreatorFactory.deploy("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, candyWallet.address, false, [], []);
   await CandyCreator.deployed();
   return {contract: CandyCreator, owner: owner, candyWallet: candyWallet, royalty1: royalty1, royalty2: royalty2}; 
@@ -13,7 +13,7 @@ async function deploySingle() {
 
 async function deployMulti() {
   const [owner, candyWallet, royalty1, royalty2] = await ethers.getSigners();
-  const CandyCreatorFactory = await ethers.getContractFactory("CandyCreatorV1A");
+  const CandyCreatorFactory = await ethers.getContractFactory("CandyCreatorVoterApprove");
   const CandyCreator = await CandyCreatorFactory.deploy("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, candyWallet.address, true, [owner.address, royalty1.address], [5000, 4500]);
   await CandyCreator.deployed();
   return {contract: CandyCreator, owner: owner, candyWallet: candyWallet, royalty1: royalty1, royalty2: royalty2}; 

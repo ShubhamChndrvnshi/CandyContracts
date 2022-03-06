@@ -40,7 +40,7 @@ import "./access/Ownable.sol";
 import "./modules/PaymentSplitter.sol";
 import "hardhat/console.sol";
 
-contract CandyCreatorV1A is ERC721A, ERC2981Collection, PaymentSplitter, Ownable {
+contract CandyCreatorVoterApprove is ERC721A, ERC2981Collection, PaymentSplitter, Ownable {
 
   // bool = 1 byte
   // string = 64 bytes 
@@ -252,21 +252,29 @@ contract CandyCreatorV1A is ERC721A, ERC2981Collection, PaymentSplitter, Ownable
     emit PaymentReceived(_msgSender(), _msgValue());
   }
 
-  // Candy Chain needs to be able to withdraw the 5% no matter what (irresepctive of vote)
+
   // @notice will release funds from the contract to the addresses
   // owed funds as passed to constructor 
   function release() external onlyOwner {
-    // Require that a proposal passed 
+    // Require that the latest proposal passed 
     require(proposalPassed, "Proposal did not pass");
+    // Require that the latest proposal funds haven't already been claimed
     require(!proposalClaimed, "Latest proposal funds already claimed");
+    // Mark the proposal funds as claimed before the release to
+    // prevent re-entrancy
     proposalClaimed = true;
+    // End the proposal and re-enable minting and transfer
     proposalActive = false;
+    // Release the funds to those owed payment
     _release(proposedReleaseBasisPoints);
   }
 
   function refundRelease() external {
     // refund the user if refund is active 
     // and they haven't been refunded yet
+    // A refund must be active to call this function
+    require(refundActive, "Refund has not been triggered");
+    // The user being refunded must own tokens 
     require(balanceOf(_msgSender()) > 0, "User does not own any tokens");
     // Get the owner's auxilliary information
     uint64 aux = _getAux(_msgSender()); 
@@ -462,6 +470,14 @@ contract CandyCreatorV1A is ERC721A, ERC2981Collection, PaymentSplitter, Ownable
     // Revert execution if the user has already voted
     require(lastVotedProposal != currentProposal, "User has already voted on current proposal");
 
+    // Generate the new aux bytes 
+    bytes memory result = bytes.concat(bytes1(currentProposal), bytes7(numWhitelistMinted));
+
+    // Cast to uint64 type required by ERC721A
+    uint64 newAux = uint64(bytes8(result));
+
+    _setAux(_msgSender(), newAux); 
+
     // If the user approved the release
     if (approve == true) {
       // Add the YES votes 
@@ -489,13 +505,7 @@ contract CandyCreatorV1A is ERC721A, ERC2981Collection, PaymentSplitter, Ownable
       proposalActive = false;
     }
 
-    // Generate the new aux bytes 
-    bytes memory result = bytes.concat(bytes1(currentProposal), bytes7(numWhitelistMinted));
-
-    // Cast to uint64 type required by ERC721A
-    uint64 newAux = uint64(bytes8(result));
-
-    _setAux(_msgSender(), newAux); 
+    
     
   }
 

@@ -4,12 +4,16 @@
 ![Twitter](https://img.shields.io/twitter/follow/Candy_Chain_?style=social)
 ![GithubFollow](https://img.shields.io/github/followers/Candy-Labs?style=social)
 
+Documentation work-in-progress
+
 # CandyCreatorV1A Governance
 Variant of the CandyCreatorV1A base contract that restricts the owner from releasing funds without first passing a community vote by the token holders. Thank you to the authors and maintainers of the [ERC721A](https://github.com/chiru-labs/ERC721A) repository for making this possible.
 
 There are two variants of this token:
 CandyCreatorVoterVeto
 CandyCreatorVoterApprove
+
+It's important to note that these are unaudited and security flaws are likely to exist, and possibilities for abuse of the governance protocol by both the contract owner and the token holders needs to be considered. A refund should perhaps not always be an option. A refund could allow token holders to always be able to refund the mint price but keep the token. We may need the Enumerable extension functions to properly burn each users token.
 
 # CandyCreatorVoterApprove
 This governance variant of the CandyCreatorV1A base contract requires the contract owner to propose a release of some percentage of the contract balance (measured in basis points). If this proposal is not explicitly approved by the token holders, it does not pass and nothing happens. At each proposal stage, voters can choose 3 options. 
@@ -21,6 +25,25 @@ If the token holder abstains from voting, they are voting for nothing to occur. 
 
 ## Approve the withdrawal proposal
 Call `vote(true)` to cast your votes to approve the proposal. 
+
+## Request a refund
+Call `vote(false)` to cast your votes to approve a refund. 
+
+# CandyCreatorVoterVeto
+This governance variant of the CandyCreatorV1A base contract requires the contract owner to propose a release of some percentage of the contract balance (measured in basis points). If this proposal is not rejected by token holders (vetoed), it will take place after the voting period has concluded (24 hours). 
+
+The disadvantage to this variant is that contract owners could 'sneakily' propose a release without informing token holders (there is no guaranteed way to alert them and the alert would have to be through an off-chain system) and if the proposal is not discovered to be active by token holders in time, they will not have time to vote to reject the proposal. We are planning to experiment with extending the voting period for this variant (but this will prevent minting and token transfer during this period). 
+
+The advantage to this variant is that the contract owner doesn't need to ask users to spend gas to approve the withdrawal. It is also very difficult to reach quorums in certain communities. Instead, token holders spend gas to secure an outcome that would directly economically benefit them (preventing the withdrawal by the owners and a 'rug pull' or refunding themselves. 
+
+## Abstain from voting
+If the token holder abstains from voting, they are voting for nothing to occur. If they abstain, and enough token holders do also, nothing will occur on the contract. 
+
+## Approve the withdrawal proposal
+Call `vote(true)` to cast your votes to approve the proposal. 
+
+## Request a refund
+Call `vote(false)` to cast your votes to approve a refund. 
 
 ## Voting 
 ### Proposing a release (Project Creator)

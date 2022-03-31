@@ -33,12 +33,12 @@
 
 pragma solidity >=0.8.4 <0.9.0;
 
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "./token/ERC721/ERC721A.sol";
-import "./eip/2981/ERC2981Collection.sol";
-import "./access/Ownable.sol";
-import "./modules/PaymentSplitter.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "./token/ERC721/ERC721AUpgradeable.sol";
+
 
 error MintingNotActive();
 error MintingActive();
@@ -54,15 +54,13 @@ error WrongPayment();
 error InvalidMintSize();
 
 contract CandyCreatorV1A is
-    ERC721A,
-    ERC2981Collection,
-    PaymentSplitter,
-    Ownable
+    Initializable,
+    ERC721AUpgradeable,
+    OwnableUpgradeable
 {
     // @notice basic state variables
     string private base;
     bool private mintingActive;
-    bool private lockedPayees;
     uint256 private maxPublicMints;
     uint256 private mintPrice;
     uint256 private mintSize;
@@ -78,27 +76,29 @@ contract CandyCreatorV1A is
     event UpdatedMaxWhitelistMints(uint256 _old, uint256 _new);
     event UpdatedMaxPublicMints(uint256 _old, uint256 _new);
     event UpdatedMintStatus(bool _old, bool _new);
-    event UpdatedRoyalties(address newRoyaltyAddress, uint256 newPercentage);
     event UpdatedWhitelistStatus(bool _old, bool _new);
     event UpdatedPresaleEnd(uint256 _old, uint256 _new);
-    event PayeesLocked(bool _status);
     event UpdatedWhitelist(bytes32 _old, bytes32 _new);
 
-    // @notice Contract constructor requires as much information
-    // about the contract as possible to avoid unnecessary function calls
-    // on the contract post-deployment.
-    constructor(
+    function __CandyCreator721A_init(
         string memory name,
         string memory symbol,
         string memory _placeholderURI,
         uint256 _mintPrice,
         uint256 _mintSize,
-        address _candyWallet,
-        bool _multi,
-        address[] memory splitAddresses,
-        uint256[] memory splitShares,
         bytes32 _whitelistMerkleRoot
-    ) ERC721A(name, symbol) {
+    ) internal onlyInitializing {
+        __CandyCreator721A_init_unchained(name, symbol, _placeholderURI, _mintPrice, _mintSize, _whitelistMerkleRoot);
+    }
+
+    function __CandyCreator721A_init_unchained(
+        string memory name,
+        string memory symbol,
+        string memory _placeholderURI,
+        uint256 _mintPrice,
+        uint256 _mintSize,
+        bytes32 _whitelistMerkleRoot
+    )   internal onlyInitializing {
         placeholderURI = _placeholderURI;
         maxWhitelistMints = 2;
         maxPublicMints = 2;
@@ -109,17 +109,9 @@ contract CandyCreatorV1A is
             whitelistMerkleRoot = _whitelistMerkleRoot;
             enableWhitelist();
         }
+
+        __ERC721A_init(name, symbol);
         
-        addPayee(_candyWallet, 500);
-        if (!_multi) {
-            addPayee(_msgSender(), 9500);
-            lockPayees();
-        } else {
-            for (uint256 i = 0; i < splitAddresses.length; i++) {
-                addPayee(splitAddresses[i], splitShares[i]);
-            }
-            lockPayees();
-        }
     }
 
     /***
@@ -145,7 +137,7 @@ contract CandyCreatorV1A is
         if (totalSupply() + amount > mintSize) revert WouldExceedMintSize();
         if (amount > maxWhitelistMints) revert ExceedsMaxWhitelistMints();
         if (
-            !MerkleProof.verify(
+            !MerkleProofUpgradeable.verify(
                 merkleProof,
                 whitelistMerkleRoot,
                 keccak256(abi.encodePacked(_msgSender()))
@@ -180,37 +172,6 @@ contract CandyCreatorV1A is
      * This section pertains to mint fees, royalties, and fund release.
      */
 
-    // Function to receive ether, msg.data must be empty
-    receive() external payable {
-        // From PaymentSplitter.sol
-        emit PaymentReceived(_msgSender(), _msgValue());
-    }
-
-    // Function to receive ether, msg.data is not empty
-    fallback() external payable {
-        // From PaymentSplitter.sol
-        emit PaymentReceived(_msgSender(), _msgValue());
-    }
-
-    // @notice will release funds from the contract to the addresses
-    // owed funds as passed to constructor
-    function release() external onlyOwner {
-        _release();
-    }
-
-    // @notice this will use internal functions to set EIP 2981
-    //  found in IERC2981.sol and used by ERC2981Collections.sol
-    // @param address _royaltyAddress - Address for all royalties to go to
-    // @param uint256 _percentage - Precentage in whole number of comission
-    //  of secondary sales
-    function setRoyaltyInfo(address _royaltyAddress, uint256 _percentage)
-        public
-        onlyOwner
-    {
-        _setRoyalties(_royaltyAddress, _percentage);
-        emit UpdatedRoyalties(_royaltyAddress, _percentage);
-    }
-
     // @notice this will set the fees required to mint using
     //  publicMint(), must enter in wei. So 1 ETH = 10**18.
     // @param uint256 _newFee - fee you set, if ETH 10**18, if
@@ -219,21 +180,6 @@ contract CandyCreatorV1A is
         uint256 oldFee = mintPrice;
         mintPrice = _newFee;
         emit UpdatedMintPrice(oldFee, mintPrice);
-    }
-
-    // @notice will add an address to PaymentSplitter by owner role
-    // @param address newAddy - address to recieve payments
-    // @param uint newShares - number of shares they recieve
-    function addPayee(address newAddy, uint256 newShares) private {
-        require(!lockedPayees, "Can not set, payees locked");
-        _addPayee(newAddy, newShares);
-    }
-
-    // @notice Will lock the ability to add further payees on PaymentSplitter.sol
-    function lockPayees() private {
-        require(!lockedPayees, "Can not set, payees locked");
-        lockedPayees = true;
-        emit PayeesLocked(lockedPayees);
     }
 
     /***
@@ -404,7 +350,7 @@ contract CandyCreatorV1A is
                     abi.encodePacked(
                         baseURI,
                         "/",
-                        Strings.toString(tokenId),
+                        StringsUpgradeable.toString(tokenId),
                         ".json"
                     )
                 )
@@ -417,12 +363,16 @@ contract CandyCreatorV1A is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721A, IERC165)
+        override(ERC721AUpgradeable)
         returns (bool)
     {
-        return (interfaceId == type(ERC2981Collection).interfaceId ||
-            interfaceId == type(PaymentSplitter).interfaceId ||
-            interfaceId == type(Ownable).interfaceId ||
-            super.supportsInterface(interfaceId));
+        return ( interfaceId == type(OwnableUpgradeable).interfaceId || super.supportsInterface(interfaceId) );
     }
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[44] private __gap;
 }

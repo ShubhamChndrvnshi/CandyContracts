@@ -18,6 +18,7 @@
  *
  *
  * Version: VARIANT_BASE_NOTPROV_NOTAIRDROP_ERC721A_NOTENUMERABLE_CONTEXTV2
+ *          v2.0
  *
  * Purpose: ERC-721 template for no-code users.
  *          Placeholder for pre-reveal information.
@@ -30,7 +31,7 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.8.4 <0.9.0;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -38,6 +39,19 @@ import "./token/ERC721/ERC721A.sol";
 import "./eip/2981/ERC2981Collection.sol";
 import "./access/Ownable.sol";
 import "./modules/PaymentSplitter.sol";
+
+error MintingNotActive();
+error MintingActive();
+error WouldExceedMintSize();
+error ExceedsMaxTransactionMints();
+error NonExistentToken();
+error WhitelistNotRequired();
+error WhitelistRequired();
+error NotWhitelisted();
+error NotEnoughWhitelistSlots();
+error ExceedsMaxWhitelistMints();
+error WrongPayment();
+error InvalidMintSize();
 
 contract CandyCreatorV1A is
     ERC721A,
@@ -49,18 +63,16 @@ contract CandyCreatorV1A is
     string private base;
     bool private mintingActive;
     bool private lockedPayees;
-    uint256 private maxPublicMints = 1;
+    uint256 private maxPublicMints;
     uint256 private mintPrice;
     uint256 private mintSize;
-    uint256 private revealTime;
     string private placeholderURI;
 
     // @notice Whitelist functionality
     bool private whitelistActive;
     bytes32 public whitelistMerkleRoot;
-    uint64 private maxWhitelistMints = 1;
+    uint64 private maxWhitelistMints;
 
-    event UpdatedRevealTimestamp(uint256 _old, uint256 _new);
     event UpdatedMintPrice(uint256 _old, uint256 _new);
     event UpdatedMintSize(uint256 _old, uint256 _new);
     event UpdatedMaxWhitelistMints(uint256 _old, uint256 _new);
@@ -88,12 +100,16 @@ contract CandyCreatorV1A is
         bytes32 _whitelistMerkleRoot
     ) ERC721A(name, symbol) {
         placeholderURI = _placeholderURI;
-        setMintPrice(_mintPrice);
-        setMintSize(_mintSize);
+        maxWhitelistMints = 2;
+        maxPublicMints = 2;
+        mintPrice = _mintPrice;
+        mintSize = _mintSize;
+        
         if (_whitelistMerkleRoot != 0) {
-            setWhitelistMerkleRoot(_whitelistMerkleRoot);
+            whitelistMerkleRoot = _whitelistMerkleRoot;
             enableWhitelist();
         }
+        
         addPayee(_candyWallet, 500);
         if (!_multi) {
             addPayee(_msgSender(), 9500);
@@ -123,28 +139,22 @@ contract CandyCreatorV1A is
         payable
     {
         // @notice using Checks-Effects-Interactions
-        require(mintingActive, "Minting not enabled");
-        require(whitelistActive, "Whitelist not required, use publicMint()");
-        require(
-            _msgValue() == mintPrice * amount,
-            "Wrong amount of Native Token"
-        );
-        require(totalSupply() + amount <= mintSize, "Can not mint that many");
-        require(amount <= maxWhitelistMints, "Exceeds maximum whitelist mints");
-        require(
-            MerkleProof.verify(
+        if (!mintingActive) revert MintingNotActive();
+        if (!whitelistActive) revert WhitelistNotRequired();
+        if (_msgValue() != mintPrice * amount) revert WrongPayment();
+        if (totalSupply() + amount > mintSize) revert WouldExceedMintSize();
+        if (amount > maxWhitelistMints) revert ExceedsMaxWhitelistMints();
+        if (
+            !MerkleProof.verify(
                 merkleProof,
                 whitelistMerkleRoot,
                 keccak256(abi.encodePacked(_msgSender()))
-            ),
-            "Address not whitelisted"
-        );
+            )
+        ) revert NotWhitelisted();
         uint64 numWhitelistMinted = _getAux(_msgSender()) + amount;
-        require(
-            numWhitelistMinted <= maxWhitelistMints,
-            "Not enough whitelist slots."
-        );
-        _mint(_msgSender(), amount, "", false);
+        if (numWhitelistMinted > maxWhitelistMints)
+            revert NotEnoughWhitelistSlots();
+        _safeMint(_msgSender(), amount);
         _setAux(_msgSender(), numWhitelistMinted);
     }
 
@@ -152,18 +162,12 @@ contract CandyCreatorV1A is
     //  requires amount * mintPrice to be sent by caller
     // @param uint amount - number of tokens minted
     function publicMint(uint256 amount) external payable {
-        require(
-            !whitelistActive,
-            "publicMint() disabled because whitelist is enabled"
-        );
-        require(mintingActive, "Minting not enabled");
-        require(
-            _msgValue() == mintPrice * amount,
-            "Wrong amount of Native Token"
-        );
-        require(totalSupply() + amount <= mintSize, "Can not mint that many");
-        require(amount <= maxPublicMints, "Exceeds public transaction limit");
-        _mint(_msgSender(), amount, "", false);
+        if (whitelistActive) revert WhitelistRequired();
+        if (!mintingActive) revert MintingNotActive();
+        if (_msgValue() != mintPrice * amount) revert WrongPayment();
+        if (totalSupply() + amount > mintSize) revert WouldExceedMintSize();
+        if (amount > maxPublicMints) revert ExceedsMaxTransactionMints();
+        _safeMint(_msgSender(), amount);
     }
 
     /***
@@ -245,6 +249,7 @@ contract CandyCreatorV1A is
 
     // @notice this will enable publicMint()
     function enableMinting() external onlyOwner {
+        if (mintingActive) revert MintingActive();
         bool old = mintingActive;
         mintingActive = true;
         emit UpdatedMintStatus(old, mintingActive);
@@ -252,6 +257,7 @@ contract CandyCreatorV1A is
 
     // @notice this will disable publicMint()
     function disableMinting() external onlyOwner {
+        if (!mintingActive) revert MintingNotActive();
         bool old = mintingActive;
         mintingActive = false;
         emit UpdatedMintStatus(old, mintingActive);
@@ -259,6 +265,7 @@ contract CandyCreatorV1A is
 
     // @notice this will enable whitelist or "if" in publicMint()
     function enableWhitelist() public onlyOwner {
+        if (whitelistActive) revert WhitelistRequired();
         bool old = whitelistActive;
         whitelistActive = true;
         emit UpdatedWhitelistStatus(old, whitelistActive);
@@ -266,6 +273,7 @@ contract CandyCreatorV1A is
 
     // @notice this will disable whitelist or "else" in publicMint()
     function disableWhitelist() external onlyOwner {
+        if (!whitelistActive) revert WhitelistNotRequired();
         bool old = whitelistActive;
         whitelistActive = false;
         emit UpdatedWhitelistStatus(old, whitelistActive);
@@ -310,18 +318,10 @@ contract CandyCreatorV1A is
     // @notice will set mint size by owner role
     // @param uint256 _amount - set number to mint
     function setMintSize(uint256 _amount) public onlyOwner {
+        if (_amount < totalSupply()) revert InvalidMintSize();
         uint256 old = mintSize;
         mintSize = _amount;
         emit UpdatedMintSize(old, mintSize);
-    }
-
-    // @notice this will set the reveal timestamp
-    // This is more for your API and not on-chain...
-    // @param uint256 _time - uinx time stamp for reveal (use with API's only)
-    function setRevealTimestamp(uint256 _timestamp) public onlyOwner {
-        uint256 old = revealTime;
-        revealTime = _timestamp;
-        emit UpdatedRevealTimestamp(old, revealTime);
     }
 
     /***
@@ -340,12 +340,6 @@ contract CandyCreatorV1A is
     // @notice will return whitelist status of Minter
     function whitelistStatus() external view returns (bool) {
         return whitelistActive;
-    }
-
-    // @notice will return the reveal timestamp for use by off-chain API to conditionally render
-    // mint button
-    function revealTimestamp() external view returns (uint256) {
-        return revealTime;
     }
 
     // @notice will return minting fees
@@ -390,7 +384,7 @@ contract CandyCreatorV1A is
     }
 
     // @notice Override for ERC721A _startTokenId to change from default 0 -> 1
-    function startTokenId() internal view override returns (uint256) {
+    function _startTokenId() internal pure override returns (uint256) {
         return 1;
     }
 
@@ -402,7 +396,7 @@ contract CandyCreatorV1A is
         override
         returns (string memory)
     {
-        require(_exists(tokenId), "Token does not exist");
+        if (!_exists(tokenId)) revert NonExistentToken();
         string memory baseURI = _baseURI();
         return
             bytes(baseURI).length > 0

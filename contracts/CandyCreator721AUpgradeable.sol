@@ -53,7 +53,7 @@ error ExceedsMaxWhitelistMints();
 error WrongPayment();
 error InvalidMintSize();
 
-contract CandyCreatorV1A is
+contract CandyCreator721AUpgradeable is
     Initializable,
     ERC721AUpgradeable,
     OwnableUpgradeable
@@ -80,38 +80,24 @@ contract CandyCreatorV1A is
     event UpdatedPresaleEnd(uint256 _old, uint256 _new);
     event UpdatedWhitelist(bytes32 _old, bytes32 _new);
 
-    function __CandyCreator721A_init(
+    function initialize(
         string memory name,
         string memory symbol,
         string memory _placeholderURI,
         uint256 _mintPrice,
         uint256 _mintSize,
         bytes32 _whitelistMerkleRoot
-    ) internal onlyInitializing {
-        __CandyCreator721A_init_unchained(name, symbol, _placeholderURI, _mintPrice, _mintSize, _whitelistMerkleRoot);
-    }
-
-    function __CandyCreator721A_init_unchained(
-        string memory name,
-        string memory symbol,
-        string memory _placeholderURI,
-        uint256 _mintPrice,
-        uint256 _mintSize,
-        bytes32 _whitelistMerkleRoot
-    )   internal onlyInitializing {
+    )   public initializer {
+        __ERC721A_init(name, symbol);
         placeholderURI = _placeholderURI;
         maxWhitelistMints = 2;
         maxPublicMints = 2;
         mintPrice = _mintPrice;
         mintSize = _mintSize;
-        
         if (_whitelistMerkleRoot != 0) {
             whitelistMerkleRoot = _whitelistMerkleRoot;
             enableWhitelist();
         }
-
-        __ERC721A_init(name, symbol);
-        
     }
 
     /***

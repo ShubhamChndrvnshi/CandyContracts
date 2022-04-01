@@ -25,17 +25,27 @@ describe("Basic Tests", function () {
     
   });
 
-  it("Deploy Factory, Create Clone, Enable Minting", async function () {
+  it("Deploy Factory, Create 100 Clones", async function () {
 
     const cloneFactoryDeployment = await deployFactory()
     const cloneFactoryContract = cloneFactoryDeployment.contract
-    const newClone = await cloneFactoryContract.connect(cloneFactoryDeployment.owner).callStatic.createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
-    console.log(`CandyCreator721ACloneFactory.createToken`);
-    console.log(`Deployed Address: ${newClone}`)
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    //await cloneFactoryContract.connect(cloneFactoryDeployment.owner).createToken("TestToken", "TEST", "candystorage/placeholder.json", 1000000000 * 1, 10000, "0x0000000000000000000000000000000000000000000000000000000000000000")
+    //console.log(`CandyCreator721ACloneFactory.createToken`);
+    //console.log(`Deployed Address: ${newClone}`)
 
-    const { interface } = await ethers.getContractFactory('CandyCreator721AUpgradeable');
-    const instance = new ethers.Contract(newClone, interface, cloneFactoryDeployment.owner);
-    await instance.connect(cloneFactoryDeployment.owner).enableMinting()
+    //const { interface } = await ethers.getContractFactory('CandyCreator721AUpgradeable');
+    //const instance = new ethers.Contract(newClone, interface, cloneFactoryDeployment.owner);
+    //await instance.connect(cloneFactoryDeployment.owner).enableMinting()
 
     
   });
